@@ -1,0 +1,163 @@
+.cu-root {
+    display: block;
+    font: 14px/1.4 system-ui, sans-serif;
+}
+
+.cu-row {
+    display: flex;
+    align-items: center;
+}
+
+.cu-gap {
+    gap: .5rem;
+}
+
+.cu-wrap {
+    flex-wrap: wrap;
+}
+
+.cu-spacer {
+    flex: 1;
+}
+
+.cu-section {
+    margin-top: .75rem;
+}
+
+.cu-field {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    min-width: 180px;
+}
+
+.cu-label {
+    font-weight: 600;
+}
+
+.cu-select, .cu-input, .cu-multi {
+    padding: 6px 8px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+}
+
+.cu-chiplist {
+    gap: .25rem;
+}
+
+.cu-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: 4px 8px;
+    border: 1px solid #ccd;
+    border-radius: 999px;
+    user-select: none;
+}
+
+.cu-btn {
+    padding: 6px 10px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.cu-footer {
+    margin-top: 1rem;
+}
+
+.cu-expression {
+    min-width: 420px;
+}
+
+.cu-check {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.cu-inline {
+    margin-right: .25rem;
+}
+
+/* Ensures [hidden] actually hides even with CSS resets */
+.cu-overlay[hidden] {
+    display: none !important;
+}
+
+.cu-compact-host .cu-compact {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+}
+
+.cu-expression-compact {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+}
+
+.cu-compact-edit {
+    padding: 6px 10px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.cu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.cu-dialog {
+    background: #fff;
+    border-radius: 12px;
+    min-width: min(920px, 96vw);
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+    display: flex;
+    flex-direction: column;
+    outline: none;
+}
+
+.cu-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.cu-title {
+    font-weight: 700;
+}
+
+.cu-modal-body {
+    padding: 1rem;
+    overflow: auto;
+}
+
+.cu-modal-actions {
+    display: flex;
+    gap: .5rem;
+    justify-content: flex-end;
+    padding: .75rem 1rem;
+    border-top: 1px solid #eee;
+}
+
+.cu-modal-actions .cu-btn {
+    padding: 6px 10px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+}
