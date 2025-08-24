@@ -55,5 +55,11 @@ window.CronUI_i18n.en = {
         h_inMonths: 'in months {mon}',
         h_onDOW: 'on DOW {dow}',
         h_inYear: 'in {year}',
+
+        //Modal
+        openBuilder: 'Edit',
+        builderTitle: 'Build schedule',
+        apply: 'Apply', cancel: 'Cancel', close: 'Close',
+        expressionPlaceholder: 'cron expression…',
     }
 };

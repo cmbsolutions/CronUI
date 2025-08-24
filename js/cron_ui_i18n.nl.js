@@ -55,5 +55,11 @@ window.CronUI_i18n.nl = {
         h_inMonths: 'in maanden {mon}',
         h_onDOW: 'op dag van week {dow}',
         h_inYear: 'in {year}',
+
+        // Modal
+        openBuilder: 'Bewerken',
+        builderTitle: 'Schema bouwen',
+        apply: 'Toepassen', cancel: 'Annuleren', close: 'Sluiten',
+        expressionPlaceholder: 'cron-expressie…',
     }
 };

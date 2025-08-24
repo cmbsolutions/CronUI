@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>CronUI</title>
+    <link rel="stylesheet" href="css/cron_ui_jquery_plugin.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="cron_ui_jquery_plugin.js"></script>
-    <script src="cron_ui_i18n.en.js"></script>
-    <script src="cron_ui_i18n.nl.js"></script>
-    <link rel="stylesheet" href="cron_ui_jquery_plugin.css">
+    <script src="js/cron_ui_jquery_plugin.js"></script>
+    <script src="js/cron_ui_i18n.en.js"></script>
+    <script src="js/cron_ui_i18n.nl.js"></script>
+    <script src="js/cron_ui_modal_addon.js"></script>
 </head>
 <body>
+<div><h2>CronUI</h2></div>
 <div id="cron"></div>
+<div><h2>CronUI-Compact</h2></div>
+<div id="cron-compact"></div>
 <script>
     // Initialize
     $('#cron').cronUI({
@@ -22,6 +26,17 @@
         }
     });
 
+    $('#cron-compact').cronUICompact({
+        flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
+        locale: 'nl',
+        openOn: 'both',
+        button: true,
+        value: '',
+        onChange: (expr, meta) => {
+            console.log('Expression:', expr);
+            console.log('Meta:', meta); // includes flavor, selected fields, etc.
+        }
+    });
     // Access the API later if needed:
     //const api = $('#cron').data('cronUI');
     //console.log('Current expr:', api.getExpression());
