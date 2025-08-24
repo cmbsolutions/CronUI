@@ -1,0 +1,82 @@
+.cu-root {
+    display: block;
+    font: 14px/1.4 system-ui, sans-serif;
+}
+
+.cu-row {
+    display: flex;
+    align-items: center;
+}
+
+.cu-gap {
+    gap: .5rem;
+}
+
+.cu-wrap {
+    flex-wrap: wrap;
+}
+
+.cu-spacer {
+    flex: 1;
+}
+
+.cu-section {
+    margin-top: .75rem;
+}
+
+.cu-field {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    min-width: 180px;
+}
+
+.cu-label {
+    font-weight: 600;
+}
+
+.cu-select, .cu-input, .cu-multi {
+    padding: 6px 8px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+}
+
+.cu-chiplist {
+    gap: .25rem;
+}
+
+.cu-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: 4px 8px;
+    border: 1px solid #ccd;
+    border-radius: 999px;
+    user-select: none;
+}
+
+.cu-btn {
+    padding: 6px 10px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.cu-footer {
+    margin-top: 1rem;
+}
+
+.cu-expression {
+    min-width: 420px;
+}
+
+.cu-check {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.cu-inline {
+    margin-right: .25rem;
+}

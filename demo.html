@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CronUI</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="cron_ui_jquery_plugin.js"></script>
+    <script src="cron_ui_i18n.en.js"></script>
+    <script src="cron_ui_i18n.nl.js"></script>
+    <link rel="stylesheet" href="cron_ui_jquery_plugin.css">
+</head>
+<body>
+<div id="cron"></div>
+<script>
+    // Initialize
+    $('#cron').cronUI({
+        flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
+        locale: 'nl',
+        onChange: (expr, meta) => {
+            console.log('Expression:', expr);
+            console.log('Meta:', meta); // includes flavor, selected fields, etc.
+        }
+    });
+
+    // Access the API later if needed:
+    //const api = $('#cron').data('cronUI');
+    //console.log('Current expr:', api.getExpression());
+    // api.setFlavor('crontab'); // switch formats on the fly
+    // api.setMode('weekly');    // switch the schedule shortcut
+    // api.setFrom('0 15 10 ? * 2,4,6 *'); // parse and load an expression
+</script>
+</body>
+</html>
