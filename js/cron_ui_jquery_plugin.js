@@ -23,7 +23,8 @@
  *   $("#myDiv").cronUI({
  *     flavor: "quartz",   // 'crontab' | 'ncron' | 'quartz'
  *     locale: "en",       // default 'en'; set 'nl' after loading cron-ui-i18n.nl.js
- *     onChange: (expr, meta) => {}
+ *     onChange: (expr, meta) => {},
+ *     value: '',
  *   });
  *
  *
@@ -31,35 +32,55 @@
 (function ($, win) {
     if (!$) return;
 
-    // --------------------------
-    // i18n fallback (English)
-    // --------------------------
+    // ---------- i18n ----------
     const FALLBACK_PACK = {
         _meta: {
             monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            // Order must be Mon..Sun; values map later to 1..6,0
-            daysShort: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            daysShort: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] // Mon..Sun
         },
         lbl: {
-            schedule: 'Schedule', flavor: 'Flavor',
-            seconds: 'Seconds', minutes: 'Minutes', hours: 'Hours',
-            dayOfMonth: 'Day of Month', dayOfWeek: 'Day of Week', months: 'Months', year: 'Year',
-            every: 'Every', specific: 'Specific', range: 'Range', interval: 'Interval',
-            to: 'to', start: 'start', every_n: 'every',
-            workdays: 'Workdays (Mon–Fri)', lastDay: 'Last day of month',
-            weekdays: 'Weekdays (Mon–Fri)', weekends: 'Weekends (Sat–Sun)',
-            all: 'All', clear: 'Clear',
-            expression: 'Expression', copy: 'Copy', copied: 'Copied',
-            everyMinute: 'Every minute', hourly: 'Hourly', daily: 'Daily',
-            weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly', custom: 'Custom',
-            crontab: 'Crontab (5)', ncron: 'NCrontab (6)', quartz: 'Quartz (6/7)',
+            schedule: 'Schedule',
+            flavor: 'Flavor',
+            seconds: 'Seconds',
+            minutes: 'Minutes',
+            hours: 'Hours',
+            dayOfMonth: 'Day of Month',
+            dayOfWeek: 'Day of Week',
+            months: 'Months',
+            year: 'Year',
+            every: 'Every',
+            specific: 'Specific',
+            range: 'Range',
+            interval: 'Interval',
+            to: 'to',
+            start: 'start',
+            every_n: 'every',
+            workdays: 'Workdays (Mon–Fri)',
+            lastDay: 'Last day of month',
+            weekdays: 'Weekdays (Mon–Fri)',
+            weekends: 'Weekends (Sat–Sun)',
+            all: 'All',
+            clear: 'Clear',
+            expression: 'Expression',
+            copy: 'Copy',
+            copied: 'Copied',
+            everyMinute: 'Every minute',
+            hourly: 'Hourly',
+            daily: 'Daily',
+            weekly: 'Weekly',
+            monthly: 'Monthly',
+            yearly: 'Yearly',
+            custom: 'Custom',
+            crontab: 'Crontab (5)',
+            ncron: 'NCrontab (6)',
+            quartz: 'Quartz (6/7)',
             helpYear: 'Use *, comma lists, ranges (a-b), and step (/n)',
             placeholderYear: '* or 2025,2027-2030/2',
             preview_crontab: 'Crontab format: m h dom mon dow',
             preview_ncron: 'NCrontab format: s m h dom mon dow',
             preview_quartz: 'Quartz format: s m h dom mon dow [year] (use ? in either dom or dow)',
 
-            // Humanize (lightweight preview)
+            // humanize fragments
             h_atSecond: 'at second {sec}',
             h_everyMinute: 'every minute',
             h_everyHourAtMin: 'every hour at :{min}',
@@ -71,18 +92,17 @@
         }
     };
 
-    // Get language pack (fallback -> external override)
     function getPack(locale) {
-        const g = (win.CronUI_i18n && win.CronUI_i18n[locale]) || {};
+        const ext = (win.CronUI_i18n && win.CronUI_i18n[locale]) || {};
         return {
-            _meta: Object.assign({}, FALLBACK_PACK._meta, g._meta),
-            lbl: Object.assign({}, FALLBACK_PACK.lbl, g.lbl)
+            _meta: Object.assign({}, FALLBACK_PACK._meta, ext._meta),
+            lbl: Object.assign({}, FALLBACK_PACK.lbl, ext.lbl)
         };
     }
 
     function L(state, key) {
-        const txt = getPack(state.locale).lbl[key];
-        return (txt == null ? key : txt);
+        const v = getPack(state.locale).lbl[key];
+        return v == null ? key : v;
     }
 
     const pad2 = (n) => (n < 10 ? '0' : '') + n;
@@ -91,15 +111,14 @@
         return String(str).replace(/\{(\w+)\}/g, (_, k) => (map[k] != null ? map[k] : '{' + k + '}'));
     }
 
-    // --------------------------
-    // Defaults
-    // --------------------------
+    // ---------- defaults ----------
     const DEFAULTS = {
-        flavor: 'crontab',       // 'crontab' | 'ncron' | 'quartz'
-        showSeconds: undefined,  // auto by flavor
-        showYear: undefined,     // auto by flavor
+        flavor: 'crontab',
+        showSeconds: undefined,
+        showYear: undefined,
         locale: 'en',
         onChange: null,
+        value: ''          // optional initial expression string
     };
 
     $.fn.cronUI = function (opts) {
@@ -110,9 +129,6 @@
         return this.each(function () {
             const $root = $(this).addClass('cu-root').empty();
 
-            // --------------------------
-            // State
-            // --------------------------
             const state = {
                 flavor: settings.flavor,
                 showSeconds: !!settings.showSeconds,
@@ -120,16 +136,13 @@
                 locale: settings.locale || 'en',
                 mode: 'every-minute',
                 sec: '*', min: '*', hour: '*', dom: '*', mon: '*', dow: '*', year: '*',
-                meta: {notes: []}
+                meta: {notes: [], holdDowQuestion: false, holdDomQuestion: false}
             };
 
-            // Meta from pack (computed functions)
             const DAYS = () => getPack(state.locale)._meta.daysShort.map((k, i) => ({v: [1, 2, 3, 4, 5, 6, 0][i], k}));
             const MONTHS = () => getPack(state.locale)._meta.monthsShort;
 
-            // --------------------------
-            // Templates
-            // --------------------------
+            // ---------- templates ----------
             const headerTpl = () => `
         <div class="cu-header">
           <div class="cu-row cu-gap">
@@ -167,8 +180,7 @@
         </div>`;
 
             function timeUnit(label, key, from, to) {
-                const items = Array.from({length: to - from + 1}, (_, i) => from + i)
-                    .map(v => `<option value="${v}">${pad2(v)}</option>`).join('');
+                const items = Array.from({length: to - from + 1}, (_, i) => from + i).map(v => `<option value="${v}">${pad2(v)}</option>`).join('');
                 return `
         <div class="cu-field cu-timeunit" data-cu-k="${key}">
           <label class="cu-label">${label}</label>
@@ -180,9 +192,7 @@
           </select>
           <div class="cu-controls" data-cu-controls="${key}">
             <div class="cu-ctrl cu-ctrl-specific" hidden>
-              <select multiple size="6" class="cu-multi" data-cu-list="${key}">
-                ${items}
-              </select>
+              <select multiple size="6" class="cu-multi" data-cu-list="${key}">${items}</select>
             </div>
             <div class="cu-ctrl cu-ctrl-range" hidden>
               <div class="cu-row cu-gap">
@@ -298,7 +308,7 @@
           </div>
         </div>`;
 
-            // Mount UI
+            // ---------- mount ----------
             $root.append(headerTpl());
             $root.append(timeRowTpl());
             $root.append(monthDayTpl());
@@ -307,9 +317,7 @@
             $root.find('select[data-cu="flavor"]').val(state.flavor);
             $root.find('select[data-cu="mode"]').val(state.mode);
 
-            // --------------------------
-            // Behavior
-            // --------------------------
+            // ---------- behavior ----------
             function toggleTimeControls(visible) {
                 ['sec', 'min', 'hour'].forEach(k => {
                     const el = $root.find(`[data-cu-k="${k}"]`);
@@ -334,7 +342,6 @@
                 state.mode = mode;
                 const $monthday = $root.find('[data-section="monthday"]');
                 const $monthyear = $root.find('[data-section="monthyear"]');
-
                 switch (mode) {
                     case 'every-minute':
                         toggleTimeControls({sec: true, min: true, hour: true});
@@ -370,19 +377,7 @@
                         if (state.showYear) state.year = '*';
                         break;
                     case 'monthly':
-                        toggleTimeControls({sec: state.showSeconds, min: true, hour: true});
-                        $monthday.show();
-                        $root.find('[data-cu-k="dom"]').show();
-                        $root.find('[data-cu-k="dow"]').hide();
-                        $monthyear.show();
-                        break;
                     case 'yearly':
-                        toggleTimeControls({sec: state.showSeconds, min: true, hour: true});
-                        $monthday.show();
-                        $root.find('[data-cu-k="dom"]').show();
-                        $root.find('[data-cu-k="dow"]').hide();
-                        $monthyear.show();
-                        break;
                     case 'custom':
                         toggleTimeControls({sec: state.showSeconds, min: true, hour: true});
                         $monthday.show();
@@ -398,7 +393,6 @@
                 state.flavor = flavor;
                 state.showSeconds = (flavor !== 'crontab');
                 state.showYear = (flavor === 'quartz');
-                // rebuild sections that depend on showSeconds/showYear
                 $root.find('[data-section="time"]').remove();
                 $root.find('[data-section="monthyear"]').remove();
                 $root.find('.cu-footer').before(timeRowTpl());
@@ -454,58 +448,48 @@
             }
 
             function buildExpression() {
-                // sync time fields
                 ['sec', 'min', 'hour'].forEach(k => {
                     if ($root.find(`[data-cu-k="${k}"]`).length) state[k] = buildFieldFromControls(k);
                 });
                 state.dom = buildFieldFromControls('dom');
 
-                // presets
                 const workdays = $root.find('[data-cu-workdays]').is(':checked');
                 const lastday = $root.find('[data-cu-lastday]').is(':checked');
 
-                const flavor = state.flavor;
                 let domField = state.dom || '*';
                 let monField = state.mon || '*';
                 let dowField = state.dow || '*';
 
                 if (workdays) dowField = '1-5';
-                if (lastday) domField = (flavor === 'quartz') ? 'L' : '28-31';
+                if (lastday) domField = (state.flavor === 'quartz') ? 'L' : '28-31';
 
                 const parts = [];
                 if (state.showSeconds) parts.push(state.sec || '*');
-                parts.push(state.min || '*');
-                parts.push(state.hour || '*');
-                parts.push(domField);
-                parts.push(monField);
-                parts.push(dowField);
+                parts.push(state.min || '*', state.hour || '*', domField, monField, dowField);
                 if (state.showYear) parts.push(state.year || '*');
 
-                // Mutual exclusivity for Quartz: if DOW set, DOM must be '?', and vice versa (unless DOM is 'L')
-                if (flavor === 'quartz') {
+                if (state.flavor === 'quartz') {
                     const offs = state.showSeconds ? 1 : 0;
-                    const domIdx = 2 + offs; // s m h [dom] mon dow [year]
+                    const domIdx = 2 + offs;
                     const dowIdx = 4 + offs;
-                    const dom = parts[domIdx];
-                    const dow = parts[dowIdx];
-                    const domSpecial = (dom === '*' || dom === '?' || dom === 'L');
-                    if (dow !== '*' && dow !== '?' && !domSpecial) parts[domIdx] = '?';
-                    if (dom !== '*' && dom !== '?' && dom !== 'L' && dow !== '*') parts[domIdx] = '?';
+                    const dom = parts[domIdx], dow = parts[dowIdx];
+                    const domOk = (dom === '*' || dom === '?' || dom === 'L');
+                    const dowOk = (dow === '*' || dow === '?');
+                    if (!domOk && !dowOk) parts[domIdx] = '?';
                 } else {
-                    // In crontab/ncron: if DOW is set (not '*'), set DOM to '*'
                     const offs = state.showSeconds ? 1 : 0;
                     const domIdx = 2 + offs;
                     const dowIdx = 4 + offs;
                     if (parts[dowIdx] !== '*') parts[domIdx] = '*';
                 }
-
                 return parts.join(' ');
             }
 
             function flavorNote() {
-                if (state.flavor === 'crontab') return L(state, 'preview_crontab');
-                if (state.flavor === 'ncron') return L(state, 'preview_ncron');
-                return L(state, 'preview_quartz');
+                const p = getPack(state.locale).lbl;
+                if (state.flavor === 'crontab') return p.preview_crontab;
+                if (state.flavor === 'ncron') return p.preview_ncron;
+                return p.preview_quartz;
             }
 
             function humanize(expr) {
@@ -559,7 +543,12 @@
                 const $dowChips = $root.find('[data-cu-chiplist="dow"] input[type="checkbox"]');
                 $dowChips.off('change').on('change', function () {
                     const vals = $dowChips.filter(':checked').map((_, el) => $(el).val()).get();
-                    state.dow = vals.length ? vals.join(',') : '*';
+                    if (vals.length) {
+                        state.dow = vals.join(',');
+                        state.meta.holdDowQuestion = false;
+                    } else {
+                        state.dow = state.meta.holdDowQuestion ? '?' : '*';
+                    }
                     update();
                 });
                 $root.find('[data-cu-weekdays]').off('change').on('change', function () {
@@ -591,7 +580,6 @@
                 $root.find('[data-cu-clear="mon"]').off('click').on('click', function () {
                     $monChips.prop('checked', false).first().trigger('change');
                 });
-
                 $root.find('[data-cu-year]').off('input').on('input', function () {
                     const v = $(this).val().trim();
                     state.year = v || '*';
@@ -599,7 +587,7 @@
                 });
             }
 
-            // Copy button
+            // Copy
             $root.on('click', '[data-cu-copy]', async function () {
                 const v = $root.find('.cu-expression').val();
                 try {
@@ -625,7 +613,183 @@
             setMode(state.mode);
             update();
 
-            // Public API
+            // ---------- parse expression -> reflect into controls ----------
+            function parseToken(tok) {
+                if (tok == null || tok === '*') return {mode: '*'};
+                if (tok === '?') return {mode: 'question'};
+                if (tok === 'L') return {mode: 'last'};
+                if (/^[^/]+\/\d+$/.test(tok)) {
+                    const [start, step] = tok.split('/');
+                    return {mode: 'step', start, step};
+                }
+                if (/^\d+-\d+$/.test(tok)) {
+                    const [a, b] = tok.split('-');
+                    return {mode: 'range', from: a, to: b};
+                }
+                if (tok.indexOf(',') >= 0) return {mode: 'specific', list: tok.split(',')};
+                return {mode: 'specific', list: [tok]};
+            }
+
+            function applyTimeControl(key, tok) {
+                const p = parseToken(tok);
+                const $f = $root.find(`[data-cu-k="${key}"]`);
+                if (!$f.length) return;
+                const $mode = $f.find('.cu-mode');
+                const $c = $f.find(`[data-cu-controls="${key}"]`);
+                $c.find('.cu-ctrl').attr('hidden', true);
+                if (p.mode === '*' || p.mode === 'question' || p.mode === 'last') {
+                    $mode.val('*');
+                    state[key] = '*';
+                    return;
+                }
+                if (p.mode === 'specific') {
+                    $mode.val('specific');
+                    $c.find('.cu-ctrl-specific').attr('hidden', false);
+                    $c.find(`[data-cu-list="${key}"]`).val((p.list || []).map(String));
+                    state[key] = (p.list || []).join(',') || '*';
+                    return;
+                }
+                if (p.mode === 'range') {
+                    $mode.val('range');
+                    $c.find('.cu-ctrl-range').attr('hidden', false);
+                    $c.find(`[data-cu-from="${key}"]`).val(p.from);
+                    $c.find(`[data-cu-to="${key}"]`).val(p.to);
+                    state[key] = `${p.from}-${p.to}`;
+                    return;
+                }
+                if (p.mode === 'step') {
+                    $mode.val('step');
+                    $c.find('.cu-ctrl-step').attr('hidden', false);
+                    $c.find(`[data-cu-start="${key}"]`).val(p.start);
+                    $c.find(`[data-cu-step="${key}"]`).val(p.step);
+                    state[key] = `${p.start}/${p.step}`;
+                    return;
+                }
+            }
+
+            function applyDom(tok) {
+                const p = parseToken(tok);
+                const $f = $root.find('[data-cu-k="dom"]');
+                const $m = $f.find('.cu-mode');
+                const $c = $f.find('[data-cu-controls="dom"]');
+                $c.find('.cu-ctrl').attr('hidden', true);
+                $root.find('[data-cu-lastday]').prop('checked', false);
+                state.meta.holdDomQuestion = false;
+                if (p.mode === 'last') {
+                    $root.find('[data-cu-lastday]').prop('checked', true);
+                    state.dom = 'L';
+                    $m.val('*');
+                    return;
+                }
+                if (p.mode === 'question') {
+                    state.dom = '?';
+                    state.meta.holdDomQuestion = true;
+                    $m.val('*');
+                    return;
+                }
+                if (p.mode === '*') {
+                    state.dom = '*';
+                    $m.val('*');
+                    return;
+                }
+                if (p.mode === 'specific') {
+                    $m.val('specific');
+                    $c.find('.cu-ctrl-specific').attr('hidden', false);
+                    $c.find('[data-cu-list="dom"]').val((p.list || []).map(String));
+                    state.dom = (p.list || []).join(',') || '*';
+                    return;
+                }
+                if (p.mode === 'range') {
+                    $m.val('range');
+                    $c.find('.cu-ctrl-range').attr('hidden', false);
+                    $c.find('[data-cu-from="dom"]').val(p.from);
+                    $c.find('[data-cu-to="dom"]').val(p.to);
+                    state.dom = `${p.from}-${p.to}`;
+                    return;
+                }
+                if (p.mode === 'step') {
+                    $m.val('step');
+                    $c.find('.cu-ctrl-step').attr('hidden', false);
+                    $c.find('[data-cu-start="dom"]').val(p.start);
+                    $c.find('[data-cu-step="dom"]').val(p.step);
+                    state.dom = `${p.start}/${p.step}`;
+                    return;
+                }
+            }
+
+            function applyMonths(tok) {
+                const p = parseToken(tok);
+                const $chips = $root.find('[data-cu-chiplist="mon"] input[type="checkbox"]');
+                $chips.prop('checked', false);
+                const check = (v) => $chips.filter(`[value="${v}"]`).prop('checked', true);
+                if (p.mode === '*') {
+                    state.mon = '*';
+                    return;
+                }
+                if (p.mode === 'specific') {
+                    (p.list || []).forEach(v => check(String(v)));
+                    state.mon = (p.list || []).join(',');
+                    return;
+                }
+                if (p.mode === 'range') {
+                    const a = Number(p.from), b = Number(p.to);
+                    for (let x = a; x <= b; x++) check(String(x));
+                    state.mon = `${p.from}-${p.to}`;
+                    return;
+                }
+                if (p.mode === 'step') {
+                    const start = Number(p.start), step = Number(p.step);
+                    for (let x = start; x <= 12; x += step) check(String(x));
+                    state.mon = `${p.start}/${p.step}`;
+                    return;
+                }
+            }
+
+            function applyDOW(tok) {
+                const p = parseToken(tok);
+                const $chips = $root.find('[data-cu-chiplist="dow"] input[type="checkbox"]');
+                $chips.prop('checked', false);
+                $root.find('[data-cu-weekdays]').prop('checked', false);
+                $root.find('[data-cu-weekends]').prop('checked', false);
+                state.meta.holdDowQuestion = false;
+                const check = (v) => $chips.filter(`[value="${v}"]`).prop('checked', true);
+                if (p.mode === '*') {
+                    state.dow = '*';
+                    return;
+                }
+                if (p.mode === 'question') {
+                    state.dow = '?';
+                    state.meta.holdDowQuestion = true;
+                    return;
+                }
+                if (p.mode === 'specific') {
+                    (p.list || []).forEach(v => check(String(v)));
+                    state.dow = (p.list || []).join(',');
+                    return;
+                }
+                if (p.mode === 'range') {
+                    const a = Number(p.from), b = Number(p.to);
+                    for (let x = a; x <= b; x++) check(String(x));
+                    state.dow = `${p.from}-${p.to}`;
+                    if (p.from === '1' && p.to === '5') $root.find('[data-cu-weekdays]').prop('checked', true);
+                    if ((p.from === '6' && p.to === '0') || (p.from === '0' && p.to === '6')) $root.find('[data-cu-weekends]').prop('checked', true);
+                    return;
+                }
+                if (p.mode === 'step') {
+                    const start = Number(p.start), step = Number(p.step);
+                    for (let x = start; x <= 7; x += step) check(String(x % 7));
+                    state.dow = `${p.start}/${p.step}`;
+                    return;
+                }
+            }
+
+            function applyYear(tok) {
+                if (!state.showYear) return;
+                state.year = tok || '*';
+                $root.find('[data-cu-year]').val(state.year === '*' ? '' : state.year);
+            }
+
+            // ---------- public API ----------
             const api = {
                 getExpression() {
                     return $root.find('.cu-expression').val();
@@ -633,12 +797,10 @@
                 setFlavor, setMode,
                 setLocale(loc) {
                     state.locale = loc || 'en';
-                    // Rebuild UI to update texts
                     const expr = $root.find('.cu-expression').val();
                     const mode = state.mode;
                     const flavor = state.flavor;
                     $root.empty();
-                    // Recreate from scratch
                     $root.append(headerTpl());
                     $root.append(timeRowTpl());
                     $root.append(monthDayTpl());
@@ -649,33 +811,37 @@
                     attachTimeHandlers();
                     attachMonthDayHandlers();
                     attachMonthYearHandlers();
-                    // Restore expression parts
                     api.setFrom(expr);
                 },
-                setFrom(parts) {
-                    const s = (Array.isArray(parts) ? parts.join(' ') : (parts || '')).trim();
+                setFrom(input) {
+                    const s = (Array.isArray(input) ? input.join(' ') : (input || '')).trim();
                     if (!s) return;
-                    const p = s.split(/\s+/);
-                    if (p.length === 5) {
-                        setFlavor('crontab');
-                        state.sec = '0';
-                        state.year = '*';
-                    } else if (p.length === 6) {
-                        setFlavor('ncron');
-                        state.year = '*';
-                    } else if (p.length === 7) {
-                        setFlavor('quartz');
-                    }
+                    const t = s.split(/\s+/);
+                    let flavor = 'crontab';
+                    if (t.length === 7) flavor = 'quartz'; else if (t.length === 6) flavor = 'ncron'; else flavor = 'crontab';
+                    setFlavor(flavor);
+
                     let i = 0;
+                    let sec, min, hour, dom, mon, dow, year;
                     if (state.showSeconds) {
-                        state.sec = p[i++];
+                        sec = t[i++];
+                        min = t[i++];
+                    } else {
+                        min = t[i++];
                     }
-                    state.min = p[i++];
-                    state.hour = p[i++];
-                    state.dom = p[i++];
-                    state.mon = p[i++];
-                    state.dow = p[i++];
-                    if (state.showYear) state.year = p[i++];
+                    hour = t[i++];
+                    dom = t[i++];
+                    mon = t[i++];
+                    dow = t[i++];
+                    if (state.showYear) year = t[i++];
+
+                    if (state.showSeconds) applyTimeControl('sec', sec);
+                    applyTimeControl('min', min);
+                    applyTimeControl('hour', hour);
+                    applyDom(dom);
+                    applyMonths(mon);
+                    applyDOW(dow);
+                    applyYear(year);
                     update();
                 },
                 destroy() {
@@ -683,7 +849,11 @@
                 }
             };
             $root.data('cronUI', api);
+
+            // Seed from initial value if provided
+            if (settings.value) {
+                api.setFrom(settings.value);
+            }
         });
     };
-
 })(jQuery, window);
