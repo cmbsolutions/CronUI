@@ -1,26 +1,27 @@
 /*!
-   Copyright 2025 CMBSolutions
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
- * CronUI Modal Addon (compact wrapper)
- * Depends on: jQuery, cron-ui-jquery-plugin.js, and optional language packs.
- * Default behavior: open the modal via the trailing button (no auto-open on focus).
+ * CronUI Modal Addon (compact wrapper with parse-from-expression)
+ * Depends on: jQuery, cron-ui-jquery-plugin.js (core), optional language packs.
+ *
+ * API:
+ *   $('#cron-compact').cronUICompact({
+ *     flavor: 'quartz',
+ *     locale: 'nl',
+ *     openOn: 'both',   // 'button' | 'focus' | 'both'
+ *     button: true,     // show trailing button
+ *     value: '',        // initial expression; parsed into builder on first open
+ *     onChange: (expr) => {}
+ *   });
+ *
+ *   const api = $('#cron-compact').data('cronUICompact');
+ *   api.open(); api.close();
+ *   api.getExpression();
+ *   api.setFrom('0 15 10 ? * 2,4,6 *');  // parse into UI + builder
+ *   api.setExpression('...');             // alias of setFrom
+ *   api.setLocale('en');
  */
-(function($, win){
+(function ($, win) {
     if (!$) return;
 
-    // Fallback strings (can be overridden by language packs)
     const FALLBACK = {
         openBuilder: 'Edit',
         builderTitle: 'Build schedule',
@@ -29,30 +30,29 @@
         close: 'Close',
         expressionPlaceholder: 'cron expression…'
     };
-    function L(locale, key){
-        const lbl = (win.CronUI_i18n && win.CronUI_i18n[locale] && win.CronUI_i18n[locale].lbl) || {};
-        return lbl[key] || FALLBACK[key] || key;
+
+    function L(locale, key) {
+        const p = (win.CronUI_i18n && win.CronUI_i18n[locale] && win.CronUI_i18n[locale].lbl) || {};
+        return p[key] || FALLBACK[key] || key;
     }
-    const UID = ()=> 'cu'+Math.random().toString(36).slice(2,9);
 
-    $.fn.cronUICompact = function(opts){
+    const UID = () => 'cu' + Math.random().toString(36).slice(2, 9);
+
+    $.fn.cronUICompact = function (opts) {
         const settings = Object.assign({
-            flavor: 'crontab',
-            locale: 'en',
-            openOn: 'button', // 'button' | 'focus' | 'both' (default 'button' avoids accidental opens)
-            button: true,
-            value: '',
-            onChange: null
-        }, opts||{});
+            flavor: 'crontab', locale: 'en', openOn: 'both', // 'button' | 'focus' | 'both'
+            button: true, value: '', onChange: null
+        }, opts || {});
 
-        return this.each(function(){
+        return this.each(function () {
             const $host = $(this).addClass('cu-compact-host').empty();
+
             const id = UID();
-            const titleId = 'cu-title-'+id;
+            const titleId = 'cu-title-' + id;
 
             // Inline compact UI
             const $inputWrap = $('<div class="cu-compact" />');
-            const $expr = $('<input type="text" class="cu-input cu-expression-compact" />')
+            const $expr = $('<input type="text" class="cu-input cu-expression-compact"/>')
                 .attr('placeholder', L(settings.locale, 'expressionPlaceholder'))
                 .val(settings.value || '');
             $inputWrap.append($expr);
@@ -70,13 +70,13 @@
         <div class="cu-overlay" role="dialog" aria-modal="true" aria-labelledby="${titleId}" hidden>
           <div class="cu-dialog" tabindex="-1">
             <div class="cu-modal-head">
-              <div class="cu-title" id="${titleId}">${L(settings.locale,'builderTitle')}</div>
-              <button type="button" class="cu-btn cu-close" aria-label="${L(settings.locale,'close')}">×</button>
+              <div class="cu-title" id="${titleId}">${L(settings.locale, 'builderTitle')}</div>
+              <button type="button" class="cu-btn cu-close" aria-label="${L(settings.locale, 'close')}">×</button>
             </div>
             <div class="cu-modal-body"><div class="cu-builder"></div></div>
             <div class="cu-modal-actions">
-              <button type="button" class="cu-btn cu-cancel">${L(settings.locale,'cancel')}</button>
-              <button type="button" class="cu-btn cu-apply">${L(settings.locale,'apply')}</button>
+              <button type="button" class="cu-btn cu-cancel">${L(settings.locale, 'cancel')}</button>
+              <button type="button" class="cu-btn cu-apply">${L(settings.locale, 'apply')}</button>
             </div>
           </div>
         </div>`);
@@ -86,49 +86,53 @@
             let builderAPI = null;
             let exprBeforeOpen = '';
 
-            function ensureBuilder(){
-                // Only build once, and only if the core plugin exists
-                if (!$builderHost.data('cronUI')) {
-                    if (!$.fn.cronUI) {
-                        console.warn('[cronUICompact] cronUI core plugin not found. Did you include cron-ui-jquery-plugin.js before the addon?');
-                        return false;
-                    }
-                    $builderHost.cronUI({
-                        flavor: settings.flavor,
-                        locale: settings.locale,
-                        onChange: (expr) => {
-                            $expr.val(expr);
-                            if (typeof settings.onChange === 'function') settings.onChange(expr);
-                        }
-                    });
+            function ensureBuilder() {
+                if ($builderHost.data('cronUI')) {
                     builderAPI = $builderHost.data('cronUI');
+                    return true;
                 }
+                if (!$.fn.cronUI) {
+                    console.warn('[cronUICompact] cronUI core plugin not found. Include cron-ui-jquery-plugin.js before this addon.');
+                    return false;
+                }
+                $builderHost.cronUI({
+                    flavor: settings.flavor, locale: settings.locale, onChange: (expr) => {
+                        $expr.val(expr);
+                        if (typeof settings.onChange === 'function') settings.onChange(expr);
+                    }
+                });
+                builderAPI = $builderHost.data('cronUI');
                 return true;
             }
 
-            function open(){
+            function open() {
                 if (!ensureBuilder()) return;
+                // Remember current inline value (used for Cancel/Close "restore")
                 exprBeforeOpen = $expr.val();
+                // Always parse current inline value into the builder controls
                 if (exprBeforeOpen) builderAPI.setFrom(exprBeforeOpen);
                 $overlay.removeAttr('hidden');
-                // Focus management
                 requestAnimationFrame(() => $overlay.find('.cu-dialog')[0].focus());
             }
-            function close(){
+
+            function close() {
                 $overlay.attr('hidden', true);
             }
-            function cancel(){
-                // Restore previous value
+
+            function cancel() {
+                // Restore pre-open value and reflect back into builder
                 $expr.val(exprBeforeOpen);
-                if (exprBeforeOpen && builderAPI) builderAPI.setFrom(exprBeforeOpen);
+                if (builderAPI && exprBeforeOpen) builderAPI.setFrom(exprBeforeOpen);
                 close();
             }
 
             // Triggers
             if (settings.openOn === 'focus' || settings.openOn === 'both') {
-                $expr.on('focus', function(){
-                    // Prevent “instant open” on page load due to script-driven focus:
-                    setTimeout(() => { if ($(this).is(':focus')) open(); }, 0);
+                $expr.on('focus', function () {
+                    // Prevent programmatic-focus auto-open: delay check
+                    setTimeout(() => {
+                        if ($(this).is(':focus')) open();
+                    }, 0);
                 });
             }
             if (settings.openOn === 'button' || settings.openOn === 'both') {
@@ -139,28 +143,44 @@
             $overlay.on('click', '.cu-close', cancel);
             $overlay.on('click', '.cu-cancel', cancel);
             $overlay.on('click', '.cu-apply', close);
-            // Backdrop click (cancel)
-            $overlay.on('mousedown', function(e){ if (e.target === this) cancel(); });
-            // Esc to close
-            $overlay.on('keydown', function(e){ if (e.key === 'Escape') cancel(); });
+            // Backdrop click = cancel
+            $overlay.on('mousedown', function (e) {
+                if (e.target === this) cancel();
+            });
+            // Esc = cancel
+            $overlay.on('keydown', function (e) {
+                if (e.key === 'Escape') cancel();
+            });
 
             // Expose API
             const api = {
-                open, close,
-                getExpression(){ return $expr.val(); },
-                setExpression(v){ $expr.val(v||''); if (builderAPI) builderAPI.setFrom($expr.val()); },
-                setLocale(loc){
+                open, close, getExpression() {
+                    return $expr.val();
+                }, setFrom(v) { // <-- parse into builder too
+                    const s = (Array.isArray(v) ? v.join(' ') : (v || '')).trim();
+                    $expr.val(s);
+                    if (ensureBuilder() && s) builderAPI.setFrom(s);
+                }, setExpression(v) {
+                    this.setFrom(v);
+                }, // alias
+                setLocale(loc) {
                     settings.locale = loc || 'en';
-                    if ($btn) $btn.text(L(settings.locale,'openBuilder'));
-                    $expr.attr('placeholder', L(settings.locale,'expressionPlaceholder'));
-                    $overlay.find('#'+titleId).text(L(settings.locale,'builderTitle'));
-                    $overlay.find('.cu-close').attr('aria-label', L(settings.locale,'close'));
-                    $overlay.find('.cu-cancel').text(L(settings.locale,'cancel'));
-                    $overlay.find('.cu-apply').text(L(settings.locale,'apply'));
-                    if (builderAPI) builderAPI.setLocale(settings.locale);
+                    if ($btn) $btn.text(L(settings.locale, 'openBuilder'));
+                    $expr.attr('placeholder', L(settings.locale, 'expressionPlaceholder'));
+                    $overlay.find('#' + titleId).text(L(settings.locale, 'builderTitle'));
+                    $overlay.find('.cu-close').attr('aria-label', L(settings.locale, 'close'));
+                    $overlay.find('.cu-cancel').text(L(settings.locale, 'cancel'));
+                    $overlay.find('.cu-apply').text(L(settings.locale, 'apply'));
+                    if (ensureBuilder()) builderAPI.setLocale(settings.locale);
                 }
             };
             $host.data('cronUICompact', api);
+
+            // Optional: if a starting value is provided, keep the inline in sync now
+            // (the builder will parse it on first open)
+            if (settings.value) {
+                api.setFrom(settings.value);
+            }
         });
     };
 
