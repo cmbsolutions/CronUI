@@ -19,7 +19,7 @@
     // Initialize
     $('#cron').cronUI({
         flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
-        locale: 'nl',
+        locale: 'en',
         value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
         onChange: (expr, meta) => {
             console.log('Expression:', expr);
@@ -29,7 +29,7 @@
 
     $('#cron-compact').cronUICompact({
         flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
-        locale: 'nl',
+        locale: 'en',
         openOn: 'both',
         button: true,
         value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
