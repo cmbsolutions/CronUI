@@ -8,6 +8,7 @@ Includes a compact **modal addon** that keeps your page clean by showing only an
 ## Table of Contents
 
 - [Features](#features)
+- [Live Demo](#live-demo)
 - [Live Concepts](#live-concepts)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -45,6 +46,12 @@ Includes a compact **modal addon** that keeps your page clean by showing only an
 - ✅ **Clipboard**: one-click **Copy** of the expression.
 - ✅ **i18n**: English fallback built-in; add language packs (e.g., **Dutch**) as separate files.
 - ✅ **Compact Modal Addon**: show one input inline; open full builder in a modal.
+
+---
+
+## Live Demo
+
+Click [here](https://cmbsolutions.github.io/CronUI/demo.html) for a live demo of the latest published version
 
 ---
 
