@@ -12,6 +12,7 @@ Includes a compact **modal addon** that keeps your page clean by showing only an
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Compact + Modal Addon](#compact--modal-addon)
+- [Compact + Modal Addon + Provide input field](#compact--modal-addon--provide-input-field)
 - [Include Order](#include-order)
 - [API](#api)
   - [Core Plugin `$.fn.cronUI`](#core-plugin-fncronui)
@@ -45,6 +46,7 @@ Includes a compact **modal addon** that keeps your page clean by showing only an
 - ✅ **Clipboard**: one-click **Copy** of the expression.
 - ✅ **i18n**: English fallback built-in; add language packs (e.g., **Dutch**) as separate files.
 - ✅ **Compact Modal Addon**: show one input inline; open full builder in a modal.
+- ✅ **Custom input field**: provide your own inputfield.
 
 ---
 
@@ -159,6 +161,46 @@ Keep your page clean: display only the expression input and open the full builde
 </script>
 ```
 
+---
+
+## Compact + Modal Addon + Provide input field
+
+Got your own input field and don't need another one: provide your input and open the full builder in a modal when needed.
+
+```html
+<label for="myField">My Field:</label><input id="myField" class="cu-input cron-compact" type="text" value="* * * * *">
+
+<link rel="stylesheet" href="/css/cron_ui_jquery_plugin.css"><!-- optional: move CSS to your bundle -->
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Core plugin + packs -->
+<script src="/js/cron_ui_jquery_plugin.js"></script>
+<script src="/js/cron_ui_i18n.en.js"></script> <!-- optional -->
+<script src="/js/cron_ui_i18n.nl.js"></script>
+
+<!-- Modal addon -->
+<script src="/js/cron_ui_modal_addon.js"></script>
+
+<script>
+  $('.cron-compact').cronUICompact({
+    flavor: 'quartz',
+    locale: 'en',           // 'en' or 'nl'
+    openOn: 'button',       // 'button' | 'focus' | 'both'
+    button: true,           // show trailing “Edit” button
+    value: '* * * * *',     // optional initial expression
+    input: $('#myField'),   // already existing input field
+    buttonTarget: none,     // Optional target element for placing the button
+    onChange: (expr) => console.log('Changed:', expr)
+  });
+
+  // API
+  const compact = $('#cron-compact').data('cronUICompact');
+  // compact.open(); compact.close();
+  // compact.setExpression('0 0 9 * * 1-5'); // weekdays at 09:00
+  // compact.setLocale('en');
+</script>
+```
 ---
 
 ## Include Order

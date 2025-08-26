@@ -5,7 +5,7 @@
 
 .cu-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .cu-gap {
