@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>CronUI</title>
+    <link rel="stylesheet" href="css/optional.css">
     <link rel="stylesheet" href="css/cron_ui_jquery_plugin.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/cron_ui_jquery_plugin.js"></script>
@@ -11,39 +12,61 @@
     <script src="js/cron_ui_modal_addon.js"></script>
 </head>
 <body>
-<div><h2>CronUI</h2></div>
-<div id="cron"></div>
-<div><h2>CronUI-Compact</h2></div>
-<div id="cron-compact"></div>
+<main>
+    <h2>CronUI</h2>
+    <div id="cron"></div>
+    <h2>CronUI-Compact</h2>
+    <div id="cron-compact"></div>
+    <h2>CronUI-Compact existing field</h2>
+    <label for="myField">My Field:</label><input id="myField" class="cu-input cron-compact" type="text" value="* 10 0/3 5-15 1,2,3,4,8,9 * *">
+</main>
 <script>
-    // Initialize
-    $('#cron').cronUI({
-        flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
-        locale: 'en',
-        value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
-        onChange: (expr, meta) => {
-            console.log('Expression:', expr);
-            console.log('Meta:', meta); // includes flavor, selected fields, etc.
-        }
-    });
+    $(document).ready(function () {
+        // Initialize CronUI
+        $('#cron').cronUI({
+            flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
+            locale: 'en',
+            value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
+            onChange: (expr, meta) => {
+                console.log('Expression:', expr);
+                console.log('Meta:', meta); // includes flavor, selected fields, etc.
+            }
+        });
 
-    $('#cron-compact').cronUICompact({
-        flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
-        locale: 'en',
-        openOn: 'both',
-        button: true,
-        value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
-        onChange: (expr, meta) => {
-            console.log('Expression:', expr);
-            console.log('Meta:', meta); // includes flavor, selected fields, etc.
-        }
+        // Initialize CronUI-Compact
+        $('#cron-compact').cronUICompact({
+            flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
+            locale: 'en',
+            openOn: 'both',
+            button: true,
+            value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
+            onChange: (expr, meta) => {
+                console.log('Expression:', expr);
+                console.log('Meta:', meta); // includes flavor, selected fields, etc.
+            }
+        });
+
+        // Initialize CronUI-Compact with existing field
+        $('.cron-compact').cronUICompact({
+            flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
+            locale: 'en',
+            openOn: 'both',
+            button: true,
+            value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
+            input: $('#myField'),
+            onChange: (expr, meta) => {
+                console.log('Expression:', expr);
+                console.log('Meta:', meta); // includes flavor, selected fields, etc.
+            }
+        });
+        // Access the API later if needed:
+        //const api = $('#cron').data('cronUI');
+        //console.log('Current expr:', api.getExpression());
+        // api.setFlavor('crontab'); // switch formats on the fly
+        // api.setMode('weekly');    // switch the schedule shortcut
+        // api.setFrom('0 15 10 ? * 2,4,6 *'); // parse and load an expression
     });
-    // Access the API later if needed:
-    //const api = $('#cron').data('cronUI');
-    //console.log('Current expr:', api.getExpression());
-    // api.setFlavor('crontab'); // switch formats on the fly
-    // api.setMode('weekly');    // switch the schedule shortcut
-    // api.setFrom('0 15 10 ? * 2,4,6 *'); // parse and load an expression
+    //# sourceURL=demo.js
 </script>
 </body>
 </html>
