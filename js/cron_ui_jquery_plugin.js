@@ -340,6 +340,10 @@
 
             function setMode(mode) {
                 state.mode = mode;
+
+                // ↓ Keep the header select in sync when mode is changed programmatically
+                $root.find('select[data-cu="mode"]').val(mode);  // no .trigger('change')!
+
                 const $monthday = $root.find('[data-section="monthday"]');
                 const $monthyear = $root.find('[data-section="monthyear"]');
                 switch (mode) {
@@ -813,35 +817,241 @@
                     attachMonthYearHandlers();
                     api.setFrom(expr);
                 },
-                setFrom(input) {
-                    const s = (Array.isArray(input) ? input.join(' ') : (input || '')).trim();
+                setFrom(parts) {
+                    // Robust parser: load expression and reflect into controls
+                    const s = (Array.isArray(parts) ? parts.join(' ') : (parts || '')).trim();
                     if (!s) return;
-                    const t = s.split(/\s+/);
-                    let flavor = 'crontab';
-                    if (t.length === 7) flavor = 'quartz'; else if (t.length === 6) flavor = 'ncron'; else flavor = 'crontab';
-                    setFlavor(flavor);
 
+                    const t = s.split(/\s+/);
+
+                    // --- Detect flavor by field count ---
+                    let flavor = 'crontab';
+                    if (t.length === 7) flavor = 'quartz';
+                    else if (t.length === 6) flavor = 'ncron';
+                    else flavor = 'crontab';
+
+                    setFlavor(flavor); // rebuilds sections based on flavor
+
+                    // Token mapping (by flavor)
                     let i = 0;
                     let sec, min, hour, dom, mon, dow, year;
-                    if (state.showSeconds) {
-                        sec = t[i++];
-                        min = t[i++];
-                    } else {
-                        min = t[i++];
-                    }
+                    if (state.showSeconds) sec = t[i++];
+                    min = t[i++];
                     hour = t[i++];
                     dom = t[i++];
                     mon = t[i++];
                     dow = t[i++];
                     if (state.showYear) year = t[i++];
 
-                    if (state.showSeconds) applyTimeControl('sec', sec);
-                    applyTimeControl('min', min);
-                    applyTimeControl('hour', hour);
+                    // --- Heuristic: infer a preset (mode) from tokens ---
+                    const isStarish = v => (v === '*' || v === '?');
+                    const hasYear = state.showYear && year && year !== '*';
+                    const onlyMin = !state.showSeconds && min !== '*' && hour === '*' && isStarish(dom) && isStarish(dow) && mon === '*' && !hasYear;
+                    const onlyTime = min !== '*' && hour !== '*' && isStarish(dom) && isStarish(dow) && mon === '*' && !hasYear;
+                    const weekly = min !== '*' && hour !== '*' && (dow && !isStarish(dow)) && isStarish(dom) && mon === '*';
+                    const monthly = min !== '*' && hour !== '*' && (dom && !isStarish(dom)) && (mon !== '*') && isStarish(dow) && !hasYear;
+                    const yearly = hasYear || (min !== '*' && hour !== '*' && (dom && !isStarish(dom)) && (mon !== '*') && isStarish(dow));
+
+                    let inferred = 'custom';
+                    if (
+                        (state.showSeconds ? (sec === '*' || sec === '0') : true) &&
+                        min === '*' && hour === '*' && mon === '*' && isStarish(dom) && isStarish(dow) && !hasYear
+                    ) inferred = 'every-minute';
+                    else if (onlyMin) inferred = 'hourly';
+                    else if (onlyTime) inferred = 'daily';
+                    else if (weekly) inferred = 'weekly';
+                    else if (monthly) inferred = 'monthly';
+                    else if (yearly) inferred = 'yearly';
+                    else inferred = 'custom';
+
+                    // Set the inferred mode BEFORE applying values (so show/hide is correct)
+                    setMode(inferred);
+
+                    // --- Apply tokens into controls/state ---
+                    function parseToken(tok) {
+                        if (tok == null || tok === '*') return {mode: '*'};
+                        if (tok === '?') return {mode: 'question'};
+                        if (tok === 'L') return {mode: 'last'};
+                        if (/^[^/]+\/\d+$/.test(tok)) {
+                            const [start, step] = tok.split('/');
+                            return {mode: 'step', start, step};
+                        }
+                        if (/^\d+-\d+$/.test(tok)) {
+                            const [a, b] = tok.split('-');
+                            return {mode: 'range', from: a, to: b};
+                        }
+                        if (tok.indexOf(',') >= 0) return {mode: 'specific', list: tok.split(',')};
+                        return {mode: 'specific', list: [tok]};
+                    }
+
+                    function applyTime(key, tok) {
+                        const p = parseToken(tok);
+                        const $f = $root.find(`[data-cu-k="${key}"]`);
+                        if (!$f.length) return;
+                        const $mode = $f.find('.cu-mode');
+                        const $c = $f.find(`[data-cu-controls="${key}"]`);
+                        $c.find('.cu-ctrl').attr('hidden', true);
+                        if (p.mode === '*' || p.mode === 'question' || p.mode === 'last') {
+                            $mode.val('*');
+                            state[key] = '*';
+                            return;
+                        }
+                        if (p.mode === 'specific') {
+                            $mode.val('specific');
+                            $c.find('.cu-ctrl-specific').attr('hidden', false);
+                            $c.find(`[data-cu-list="${key}"]`).val((p.list || []).map(String));
+                            state[key] = (p.list || []).join(',') || '*';
+                            return;
+                        }
+                        if (p.mode === 'range') {
+                            $mode.val('range');
+                            $c.find('.cu-ctrl-range').attr('hidden', false);
+                            $c.find(`[data-cu-from="${key}"]`).val(p.from);
+                            $c.find(`[data-cu-to="${key}"]`).val(p.to);
+                            state[key] = `${p.from}-${p.to}`;
+                            return;
+                        }
+                        if (p.mode === 'step') {
+                            $mode.val('step');
+                            $c.find('.cu-ctrl-step').attr('hidden', false);
+                            $c.find(`[data-cu-start="${key}"]`).val(p.start);
+                            $c.find(`[data-cu-step="${key}"]`).val(p.step);
+                            state[key] = `${p.start}/${p.step}`;
+                            return;
+                        }
+                    }
+
+                    function applyDom(tok) {
+                        const p = parseToken(tok);
+                        const $f = $root.find('[data-cu-k="dom"]');
+                        const $m = $f.find('.cu-mode');
+                        const $c = $f.find('[data-cu-controls="dom"]');
+                        $c.find('.cu-ctrl').attr('hidden', true);
+                        $root.find('[data-cu-lastday]').prop('checked', false);
+                        state.meta.holdDomQuestion = false;
+                        if (p.mode === 'last') {
+                            $root.find('[data-cu-lastday]').prop('checked', true);
+                            state.dom = 'L';
+                            $m.val('*');
+                            return;
+                        }
+                        if (p.mode === 'question') {
+                            state.dom = '?';
+                            state.meta.holdDomQuestion = true;
+                            $m.val('*');
+                            return;
+                        }
+                        if (p.mode === '*') {
+                            state.dom = '*';
+                            $m.val('*');
+                            return;
+                        }
+                        if (p.mode === 'specific') {
+                            $m.val('specific');
+                            $c.find('.cu-ctrl-specific').attr('hidden', false);
+                            $c.find('[data-cu-list="dom"]').val((p.list || []).map(String));
+                            state.dom = (p.list || []).join(',') || '*';
+                            return;
+                        }
+                        if (p.mode === 'range') {
+                            $m.val('range');
+                            $c.find('.cu-ctrl-range').attr('hidden', false);
+                            $c.find('[data-cu-from="dom"]').val(p.from);
+                            $c.find('[data-cu-to="dom"]').val(p.to);
+                            state.dom = `${p.from}-${p.to}`;
+                            return;
+                        }
+                        if (p.mode === 'step') {
+                            $m.val('step');
+                            $c.find('.cu-ctrl-step').attr('hidden', false);
+                            $c.find('[data-cu-start="dom"]').val(p.start);
+                            $c.find('[data-cu-step="dom"]').val(p.step);
+                            state.dom = `${p.start}/${p.step}`;
+                            return;
+                        }
+                    }
+
+                    function applyMonths(tok) {
+                        const p = parseToken(tok);
+                        const $chips = $root.find('[data-cu-chiplist="mon"] input[type="checkbox"]');
+                        $chips.prop('checked', false);
+                        const check = (v) => $chips.filter(`[value="${v}"]`).prop('checked', true);
+                        if (p.mode === '*') {
+                            state.mon = '*';
+                            return;
+                        }
+                        if (p.mode === 'specific') {
+                            (p.list || []).forEach(v => check(String(v)));
+                            state.mon = (p.list || []).join(',');
+                            return;
+                        }
+                        if (p.mode === 'range') {
+                            const a = Number(p.from), b = Number(p.to);
+                            for (let x = a; x <= b; x++) check(String(x));
+                            state.mon = `${p.from}-${p.to}`;
+                            return;
+                        }
+                        if (p.mode === 'step') {
+                            const start = Number(p.start), step = Number(p.step);
+                            for (let x = start; x <= 12; x += step) check(String(x));
+                            state.mon = `${p.start}/${p.step}`;
+                            return;
+                        }
+                    }
+
+                    function applyDOW(tok) {
+                        const p = parseToken(tok);
+                        const $chips = $root.find('[data-cu-chiplist="dow"] input[type="checkbox"]');
+                        $chips.prop('checked', false);
+                        $root.find('[data-cu-weekdays]').prop('checked', false);
+                        $root.find('[data-cu-weekends]').prop('checked', false);
+                        state.meta.holdDowQuestion = false;
+                        const check = (v) => $chips.filter(`[value="${v}"]`).prop('checked', true);
+                        if (p.mode === '*') {
+                            state.dow = '*';
+                            return;
+                        }
+                        if (p.mode === 'question') {
+                            state.dow = '?';
+                            state.meta.holdDowQuestion = true;
+                            return;
+                        }
+                        if (p.mode === 'specific') {
+                            (p.list || []).forEach(v => check(String(v)));
+                            state.dow = (p.list || []).join(',');
+                            return;
+                        }
+                        if (p.mode === 'range') {
+                            const a = Number(p.from), b = Number(p.to);
+                            for (let x = a; x <= b; x++) check(String(x));
+                            state.dow = `${p.from}-${p.to}`;
+                            if (p.from === '1' && p.to === '5') $root.find('[data-cu-weekdays]').prop('checked', true);
+                            if ((p.from === '6' && p.to === '0') || (p.from === '0' && p.to === '6')) $root.find('[data-cu-weekends]').prop('checked', true);
+                            return;
+                        }
+                        if (p.mode === 'step') {
+                            const start = Number(p.start), step = Number(p.step);
+                            for (let x = start; x <= 7; x += step) check(String(x % 7));
+                            state.dow = `${p.start}/${p.step}`;
+                            return;
+                        }
+                    }
+
+                    function applyYear(tok) {
+                        if (!state.showYear) return;
+                        state.year = tok || '*';
+                        $root.find('[data-cu-year]').val(state.year === '*' ? '' : state.year);
+                    }
+
+                    // Apply into UI
+                    if (state.showSeconds) applyTime('sec', sec);
+                    applyTime('min', min);
+                    applyTime('hour', hour);
                     applyDom(dom);
                     applyMonths(mon);
                     applyDOW(dow);
                     applyYear(year);
+
                     update();
                 },
                 destroy() {
