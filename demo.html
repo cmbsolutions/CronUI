@@ -10,6 +10,7 @@
     <script src="js/cron_ui_i18n.en.js"></script>
     <script src="js/cron_ui_i18n.nl.js"></script>
     <script src="js/cron_ui_modal_addon.js"></script>
+    <script src="js/cron_ui_nextruns_addon.js"></script>
 </head>
 <body>
 <main>
@@ -32,6 +33,7 @@
                 console.log('Meta:', meta); // includes flavor, selected fields, etc.
             }
         });
+        $('#cron').cronUINextRuns({ count: 10 });
 
         // Initialize CronUI-Compact
         $('#cron-compact').cronUICompact({

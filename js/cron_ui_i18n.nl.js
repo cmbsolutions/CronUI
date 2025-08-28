@@ -61,5 +61,9 @@ window.CronUI_i18n.nl = {
         builderTitle: 'Schema bouwen',
         apply: 'Toepassen', cancel: 'Annuleren', close: 'Sluiten',
         expressionPlaceholder: 'cron-expressie…',
+
+        //Nextrun
+        nextRuns: 'Volgende 10 gebeurtenissen',
+        none: 'Geen aankomende gebeurtenissen',
     }
 };

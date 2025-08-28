@@ -61,5 +61,9 @@ window.CronUI_i18n.en = {
         builderTitle: 'Build schedule',
         apply: 'Apply', cancel: 'Cancel', close: 'Close',
         expressionPlaceholder: 'cron expression…',
+
+        //Nextrun
+        nextRuns: 'Next 10 occurrences',
+        none: 'No upcoming occurrences',
     }
 };
