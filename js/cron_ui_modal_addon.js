@@ -152,6 +152,7 @@
                 $builderHost.cronUI({
                     flavor: settings.flavor,
                     locale: settings.locale,
+                    editableFlavor: settings.editableFlavor,
                     onChange: (expr) => {
                         if (initializing) return;
                         $expr.val(expr);

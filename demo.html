@@ -25,15 +25,15 @@
     $(document).ready(function () {
         // Initialize CronUI
         $('#cron').cronUI({
-            flavor: 'quartz',     // 'crontab' | 'ncron' | 'quartz'
+            flavor: 'ncron',     // 'crontab' | 'ncron' | 'quartz',
+            editableFlavor: true,
             locale: 'en',
-            value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
+            value: '* 10 0/3 5-15 1,2,3,4,8,9',
             onChange: (expr, meta) => {
                 console.log('Expression:', expr);
                 console.log('Meta:', meta); // includes flavor, selected fields, etc.
             }
-        });
-        $('#cron').cronUINextRuns({ count: 10 });
+        }).cronUINextRuns({ count: 10 });
 
         // Initialize CronUI-Compact
         $('#cron-compact').cronUICompact({
@@ -42,6 +42,7 @@
             openOn: 'both',
             button: true,
             value: '* 10 0/3 5-15 1,2,3,4,8,9 * *',
+            editableFlavor: false,
             onChange: (expr, meta) => {
                 console.log('Expression:', expr);
                 console.log('Meta:', meta); // includes flavor, selected fields, etc.

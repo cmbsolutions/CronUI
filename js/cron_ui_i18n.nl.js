@@ -41,6 +41,7 @@ window.CronUI_i18n.nl = {
         ncron: 'NCrontab (6)',
         quartz: 'Quartz (6/7)',
         helpYear: 'Gebruik *, komma-lijsten, bereiken (a-b) en stap (/n)',
+        helpMultiSelect: 'Gebruik CTRL+Klik om meerdere waarden te selecteren',
         placeholderYear: '* of 2025,2027-2030/2',
         preview_crontab: 'Crontab formaat: m h dom mon dow',
         preview_ncron: 'NCrontab formaat: s m h dom mon dow',

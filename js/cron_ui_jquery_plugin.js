@@ -75,6 +75,7 @@
             ncron: 'NCrontab (6)',
             quartz: 'Quartz (6/7)',
             helpYear: 'Use *, comma lists, ranges (a-b), and step (/n)',
+            helpMultiSelect: 'Use CTRL+Click to select multiple values',
             placeholderYear: '* or 2025,2027-2030/2',
             preview_crontab: 'Crontab format: m h dom mon dow',
             preview_ncron: 'NCrontab format: s m h dom mon dow',
@@ -108,17 +109,19 @@
     const pad2 = (n) => (n < 10 ? '0' : '') + n;
 
     function fmt(str, map) {
-        return String(str).replace(/\{(\w+)\}/g, (_, k) => (map[k] != null ? map[k] : '{' + k + '}'));
+        return String(str).replace(/\{(\w+)}/g, (_, k) => (map[k] != null ? map[k] : '{' + k + '}'));
     }
 
     // ---------- defaults ----------
     const DEFAULTS = {
         flavor: 'crontab',
+        editableFlavor: true,
         showSeconds: undefined,
         showYear: undefined,
         locale: 'en',
         onChange: null,
-        value: ''          // optional initial expression string
+        value: '',          // optional initial expression string
+        hints: true
     };
 
     $.fn.cronUI = function (opts) {
@@ -131,9 +134,11 @@
 
             const state = {
                 flavor: settings.flavor,
+                editableFlavor: settings.editableFlavor,
                 showSeconds: !!settings.showSeconds,
                 showYear: !!settings.showYear,
                 locale: settings.locale || 'en',
+                hints: settings.hints,
                 mode: 'every-minute',
                 sec: '*', min: '*', hour: '*', dom: '*', mon: '*', dow: '*', year: '*',
                 meta: {notes: [], holdDowQuestion: false, holdDomQuestion: false}
@@ -160,15 +165,19 @@
             </div>
             <div class="cu-spacer"></div>
             <div class="cu-flavor">
+            ${state.editableFlavor === true ? `
               <label class="cu-label">${L(state, 'flavor')}</label>
               <select class="cu-select" data-cu="flavor">
                 <option value="crontab">${L(state, 'crontab')}</option>
                 <option value="ncron">${L(state, 'ncron')}</option>
                 <option value="quartz">${L(state, 'quartz')}</option>
-              </select>
+              </select>` : ''}
             </div>
           </div>
         </div>`;
+
+
+
 
             const timeRowTpl = () => `
         <div class="cu-section cu-time" data-section="time">
@@ -193,6 +202,7 @@
           <div class="cu-controls" data-cu-controls="${key}">
             <div class="cu-ctrl cu-ctrl-specific" hidden>
               <select multiple size="6" class="cu-multi" data-cu-list="${key}">${items}</select>
+              ${state.hints ? `<small class="cu-help">${L(state, 'helpMultiSelect')}</small>`:''}
             </div>
             <div class="cu-ctrl cu-ctrl-range" hidden>
               <div class="cu-row cu-gap">
@@ -314,6 +324,7 @@
             $root.append(monthDayTpl());
             $root.append(monthYearTpl());
             $root.append(footerTpl());
+
             $root.find('select[data-cu="flavor"]').val(state.flavor);
             $root.find('select[data-cu="mode"]').val(state.mode);
 
@@ -504,7 +515,7 @@
                     sec = p[0];
                     offs = 1;
                 }
-                const min = p[0 + offs], hour = p[1 + offs], dom = p[2 + offs], mon = p[3 + offs], dow = p[4 + offs];
+                const min = p[offs], hour = p[1 + offs], dom = p[2 + offs], mon = p[3 + offs], dow = p[4 + offs];
                 const year = state.showYear ? (p[5 + offs] || '*') : null;
                 const out = [];
                 if (state.showSeconds && sec !== '*') out.push(fmt(L(state, 'h_atSecond'), {sec}));
@@ -667,7 +678,6 @@
                     $c.find(`[data-cu-start="${key}"]`).val(p.start);
                     $c.find(`[data-cu-step="${key}"]`).val(p.step);
                     state[key] = `${p.start}/${p.step}`;
-                    return;
                 }
             }
 
@@ -717,7 +727,6 @@
                     $c.find('[data-cu-start="dom"]').val(p.start);
                     $c.find('[data-cu-step="dom"]').val(p.step);
                     state.dom = `${p.start}/${p.step}`;
-                    return;
                 }
             }
 
@@ -745,7 +754,6 @@
                     const start = Number(p.start), step = Number(p.step);
                     for (let x = start; x <= 12; x += step) check(String(x));
                     state.mon = `${p.start}/${p.step}`;
-                    return;
                 }
             }
 
@@ -783,7 +791,6 @@
                     const start = Number(p.start), step = Number(p.step);
                     for (let x = start; x <= 7; x += step) check(String(x % 7));
                     state.dow = `${p.start}/${p.step}`;
-                    return;
                 }
             }
 
@@ -917,7 +924,6 @@
                             $c.find(`[data-cu-start="${key}"]`).val(p.start);
                             $c.find(`[data-cu-step="${key}"]`).val(p.step);
                             state[key] = `${p.start}/${p.step}`;
-                            return;
                         }
                     }
 
@@ -967,7 +973,6 @@
                             $c.find('[data-cu-start="dom"]').val(p.start);
                             $c.find('[data-cu-step="dom"]').val(p.step);
                             state.dom = `${p.start}/${p.step}`;
-                            return;
                         }
                     }
 
@@ -995,7 +1000,6 @@
                             const start = Number(p.start), step = Number(p.step);
                             for (let x = start; x <= 12; x += step) check(String(x));
                             state.mon = `${p.start}/${p.step}`;
-                            return;
                         }
                     }
 
@@ -1033,7 +1037,6 @@
                             const start = Number(p.start), step = Number(p.step);
                             for (let x = start; x <= 7; x += step) check(String(x % 7));
                             state.dow = `${p.start}/${p.step}`;
-                            return;
                         }
                     }
 

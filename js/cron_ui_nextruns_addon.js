@@ -65,7 +65,7 @@
                 continue;
             }
             if((m = part.match(/^(\d+)$/))){
-                let v = toInt(m[1]); if(field==='dow' && v===7) v=0; out.add(v); continue;
+                let v = toInt(m[1]); if(field==='dow' && v===7) v=0; out.add(v);
             }
         }
         const arr = Array.from(out).filter(v=>v>=min && v<=max).sort((a,b)=>a-b);
