@@ -60,7 +60,9 @@ window.CronUI_i18n.nl = {
         // Modal
         openBuilder: 'Bewerken',
         builderTitle: 'Schema bouwen',
-        apply: 'Toepassen', cancel: 'Annuleren', close: 'Sluiten',
+        apply: 'Toepassen',
+        cancel: 'Annuleren',
+        close: 'Sluiten',
         expressionPlaceholder: 'cron-expressie…',
 
         //Nextrun

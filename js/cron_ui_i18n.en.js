@@ -60,7 +60,9 @@ window.CronUI_i18n.en = {
         //Modal
         openBuilder: 'Edit',
         builderTitle: 'Build schedule',
-        apply: 'Apply', cancel: 'Cancel', close: 'Close',
+        apply: 'Apply',
+        cancel: 'Cancel',
+        close: 'Close',
         expressionPlaceholder: 'cron expression…',
 
         //Nextrun
