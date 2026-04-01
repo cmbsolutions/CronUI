@@ -5,10 +5,11 @@
     <title>CronUI</title>
     <link rel="stylesheet" href="css/optional.css">
     <link rel="stylesheet" href="css/cron_ui_jquery_plugin.css">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
     <script src="js/cron_ui_jquery_plugin.js"></script>
     <script src="js/cron_ui_i18n.en.js"></script>
     <script src="js/cron_ui_i18n.nl.js"></script>
+    <script src="js/cron_ui_modal_manager.js"></script>
     <script src="js/cron_ui_modal_addon.js"></script>
     <script src="js/cron_ui_nextruns_addon.js"></script>
 </head>
@@ -20,7 +21,16 @@
     <div id="cron-compact"></div>
     <h2>CronUI-Compact existing field</h2>
     <label for="myField">My Field:</label><input id="myField" class="cu-input cron-compact" type="text" value="* 10 0/3 5-15 1,2,3,4,8,9 * *">
+    <h2>CronUI-Manager for multiple existing fields</h2>
+    <div id="cron-manager">
+        <div class="cu-row"><label for="schedule1">Field No1.</label><input class="cu-input js-cron" name="schedule1" id="schedule1" value="0 0 9 * * 1-5"></div>
+        <div class="cu-row"><label for="schedule2">Field No2.</label><input class="cu-input js-cron" name="schedule2" id="schedule2" value="0 15 10 ? * 2,4,6 *"></div>
+        <div class="cu-row"><label for="schedule3">Field No3.</label><input class="cu-input js-cron" name="schedule3" id="schedule3" value="0/5 * * * *"></div>
+    </div>
 </main>
+<footer>
+    <div class="cu-footer">CronUI demo page / CMBSolutions 2025-2026</div>
+</footer>
 <script>
     $(document).ready(function () {
         // Initialize CronUI
@@ -62,6 +72,19 @@
                 console.log('Meta:', meta); // includes flavor, selected fields, etc.
             }
         });
+
+        // Initialize CronUI-Manager with multiple existing fields
+        const cronManager = $.cronUIBindMany({
+            inputs: '.js-cron',
+            flavor: 'quartz',
+            locale: 'en',
+            openOn: 'button',   // or 'focus' or 'both'
+            button: true,
+            onChange: (expr, $input) => {
+                console.log('updated', $input.attr('name'), expr);
+            }
+        });
+
         // Access the API later if needed:
         //const api = $('#cron').data('cronUI');
         //console.log('Current expr:', api.getExpression());
