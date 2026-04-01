@@ -1,7 +1,13 @@
 # CronUI — jQuery Cron Expression Builder
 
 A single-div, stylable UI to compose **Crontab (5)**, **NCrontab (6)**, and **Quartz (6/7)** cron expressions.  
-Includes a compact **modal addon** that keeps your page clean by showing only an expression input inline and opening the full builder on demand.
+
+It includes:
+- a full inline builder,
+- a compact modal addon for a single field,
+- a shared modal manager for many fields in one form,
+- separate language packs,
+- optional next-occurrence listing.
 
 ---
 
@@ -14,6 +20,7 @@ Includes a compact **modal addon** that keeps your page clean by showing only an
 - [Quick Start](#quick-start)
 - [Compact + Modal Addon](#compact--modal-addon)
 - [Compact + Modal Addon + Provide input field](#compact--modal-addon--provide-input-field)
+- [Multi-field modal manager](#multi-field-modal-manager)
 - [Include Order](#include-order)
 - [API](#api)
   - [Core Plugin `$.fn.cronUI`](#core-plugin-fncronui)
@@ -48,6 +55,7 @@ Includes a compact **modal addon** that keeps your page clean by showing only an
 - ✅ **i18n**: English fallback built-in; add language packs (e.g., **Dutch**) as separate files.
 - ✅ **Compact Modal Addon**: show one input inline; open full builder in a modal.
 - ✅ **Custom input field**: provide your own inputfield.
+- ✅ **Shared modal manager**: for many inputfields.
 
 ---
 
@@ -68,15 +76,26 @@ Click [here](https://cmbsolutions.github.io/CronUI/demo.html) for a live demo of
 ## Installation
 
 **Requirements**
-- jQuery **3.6+** (tested with 3.7)
+- jQuery **3.7+** (tested with 4.0)
 - No other dependencies
 
 **Files**
-- `cron_ui_jquery_plugin.js` (core plugin)
-- `cron_ui_i18n.en.js` (optional English pack override)
-- `cron_ui_i18n.nl.js` (Dutch pack)
-- `cron_ui_modal_addon.js` (optional compact modal addon)
-- `cron_ui_jquery_plugin.css` (CSS for the core and the addon—feel free to rename/move into your bundle)
+Core:
+- `cron_ui_jquery_plugin.js`
+- `cron_ui_jquery_plugin.css`
+
+Language packs:
+- `cron_ui_i18n.en.js`
+- `cron_ui_i18n.nl.js`
+
+Single-field modal addon:
+- `cron_ui_modal_addon.js`
+
+Multi-field modal manager:
+- `cron_ui_modal_manager.js`
+
+Optional:
+- `cron_ui_nextruns_addon.js`
 
 **Folder structure (example)**
 
@@ -87,6 +106,8 @@ Click [here](https://cmbsolutions.github.io/CronUI/demo.html) for a live demo of
     cron_ui_i18n.en.js
     cron_ui_i18n.nl.js
     cron_ui_modal_addon.js
+    cron_ui_modal_addon.js
+    cron_ui_nextruns_addon.js
   /css
     cron_ui_jquery_plugin.css
 ```
@@ -100,7 +121,7 @@ Click [here](https://cmbsolutions.github.io/CronUI/demo.html) for a live demo of
 
 <link rel="stylesheet" href="/css/cron_ui_jquery_plugin.css">
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
 
 <!-- Core plugin -->
 <script src="/js/cron_ui_jquery_plugin.js"></script>
@@ -140,7 +161,7 @@ Keep your page clean: display only the expression input and open the full builde
 
 <link rel="stylesheet" href="/css/cron_ui_jquery_plugin.css"><!-- optional: move CSS to your bundle -->
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
 
 <!-- Core plugin + packs -->
 <script src="/js/cron_ui_jquery_plugin.js"></script>
@@ -179,7 +200,7 @@ Got your own input field and don't need another one: provide your input and open
 
 <link rel="stylesheet" href="/css/cron_ui_jquery_plugin.css"><!-- optional: move CSS to your bundle -->
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
 
 <!-- Core plugin + packs -->
 <script src="/js/cron_ui_jquery_plugin.js"></script>
@@ -210,12 +231,50 @@ Got your own input field and don't need another one: provide your input and open
 ```
 ---
 
+## Multi-field modal manager
+
+Use this when you have **multiple cron inputs in one form** and want **one shared modal** and **one shared builder**.
+This avoids creating a separate modal addon instance for each field.
+
+```html
+<link rel="stylesheet" href="/css/cron_ui_jquery_plugin.css"><!-- optional: move CSS to your bundle -->
+
+<script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
+
+<!-- Core plugin + packs -->
+<script src="/js/cron_ui_jquery_plugin.js"></script>
+<script src="/js/cron_ui_i18n.en.js"></script> <!-- optional -->
+<script src="/js/cron_ui_i18n.nl.js"></script>
+
+<!-- Modal manager addon -->
+<script src="/js/cron_ui_modal_manager.js"></script>
+
+<input class="js-cron" name="schedule1" value="0 0 9 * * 1-5">
+<input class="js-cron" name="schedule2" value="0 15 10 ? * 2,4,6 *">
+<input class="js-cron" name="schedule3" value="0/5 * * * *">
+
+<script>
+  const cronManager = $.cronUIBindMany({
+    inputs: '.js-cron',
+    flavor: 'quartz',
+    locale: 'nl',
+    openOn: 'button',
+    button: true,
+    onChange: (expr, $input) => {
+      console.log('updated', $input.attr('name'), expr);
+    }
+  });
+</script>
+```
+---
+
 ## Include Order
 
 1. jQuery  
 2. `cron_ui_jquery_plugin.js` (core)  
 3. Language pack(s) — e.g., `cron_ui_i18n.en.js`, `cron_ui_i18n.nl.js`  
 4. (Optional) `cron_ui_modal_addon.js` for compact modal
+5. (Optional) `cron_ui_modal_manager.js` for predefined multi input fields
 
 > If the addon loads before the core plugin, it will warn and skip building until opened; correct order recommended.
 
@@ -413,7 +472,8 @@ Quartz requires either **Day-of-Month** or **Day-of-Week** to be `?` when the ot
 
 ## Versioning & Compatibility
 
-- Tested on jQuery 3.7.x.
+- jQuery 3.7+ required
+- Tested with jQuery 4.0.0
 - Works in modern evergreen browsers. IE is not supported.
 
 ---
